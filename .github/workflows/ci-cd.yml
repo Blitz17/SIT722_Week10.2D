@@ -84,7 +84,7 @@ jobs:
 
       - name: Deploy staging environment
         run: |
-          docker-compose -f docker-compose.staging.yml up -d
+          docker compose -f docker-compose.staging.yml up -d
 
       - name: Test staging environment
         run: |
@@ -93,7 +93,7 @@ jobs:
 
       - name: Tear down staging environment
         run: |
-          docker-compose -f docker-compose.staging.yml down
+          docker compose -f docker-compose.staging.yml down
           echo "Staging environment destroyed."
 
   deploy-production:
