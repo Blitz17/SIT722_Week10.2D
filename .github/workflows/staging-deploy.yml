@@ -1,0 +1,51 @@
+name: Staging Deployment Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]   # Stage 1 workflow name
+    types:
+      - completed
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      # 1. Checkout the repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Log in to Azure ACR
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      # 3. Pull images from ACR
+      - name: Pull images from ACR
+        run: |
+          docker pull ${{ secrets.REGISTRY_LOGIN_SERVER }}/product_service:latest
+          docker pull ${{ secrets.REGISTRY_LOGIN_SERVER }}/order_service:latest
+          docker pull ${{ secrets.REGISTRY_LOGIN_SERVER }}/customer_service:latest
+          docker pull ${{ secrets.REGISTRY_LOGIN_SERVER }}/frontend:latest
+
+      # 4. Deploy staging environment using docker-compose
+      - name: Start staging environment
+        run: |
+          docker-compose -f docker-compose.staging.yml up -d
+
+      # 5. Pause for testing (manual or trivial tests)
+      - name: Perform simple/trivial testing
+        run: |
+          echo "Staging environment running. Perform manual or automated tests here."
+          echo "Containers running:"
+          docker ps
+
+      # 6. Destroy the staging environment after testing
+      - name: Tear down staging environment
+        run: |
+          docker-compose -f docker-compose.staging.yml down
+          echo "Staging environment destroyed."
